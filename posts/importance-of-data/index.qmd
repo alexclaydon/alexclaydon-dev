@@ -1,0 +1,10 @@
+---
+title: "The Importance of Data"
+date: "2025-01-30"
+---
+
+LLMs present enormous opportunity but can also lead to organisational ”analysis paralysis”: Where and when do we start? How do we generate actual value? Should we wait for the models to mature? How do we position ourselves for the future?
+
+Different verticals have their own requirements, and the challenges are substantial. But in our experience, the correct starting point is already clear: focus on your data. Organisations that start now and focus on the creation, collection and curation of data - and the infrastructure to support it - will dominate.
+
+The new technology does mandate some changes to what is created and collected, but the bulk of the work lies in rigorously applying techniques which are already well-understood - but rarely well-implemented.
