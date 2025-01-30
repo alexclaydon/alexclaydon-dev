@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>alexclaydon.dev</title>
+<link>https://alexclaydon.dev/</link>
+<atom:link href="https://alexclaydon.dev/index.xml" rel="self" type="application/rss+xml"/>
+<description>Technical blog of Alex Claydon, Head of Data and AI Strategy at Lexical Labs</description>
+<generator>quarto-1.6.40</generator>
+<lastBuildDate>Wed, 29 Jan 2025 15:00:00 GMT</lastBuildDate>
+<item>
+  <title>The Importance of Data</title>
+  <link>https://alexclaydon.dev/posts/importance-of-data/</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>LLMs present enormous opportunity but can also lead to organisational ”analysis paralysis”: Where and when do we start? How do we generate actual value? Should we wait for the models to mature? How do we position ourselves for the future?</p>
+<p>Different verticals have their own requirements, and the challenges are substantial. But in our experience, the correct starting point is already clear: focus on your data. Organisations that start now and focus on the creation, collection and curation of data - and the infrastructure to support it - will dominate.</p>
+<p>The new technology does mandate some changes to what is created and collected, but the bulk of the work lies in rigorously applying techniques which are already well-understood - but rarely well-implemented.</p>
+
+
+
+ ]]></description>
+  <guid>https://alexclaydon.dev/posts/importance-of-data/</guid>
+  <pubDate>Wed, 29 Jan 2025 15:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>
