@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "alexclaydon.dev"
+  site-url: https://alexclaydon.dev
+  description: "Technical blog of Alex Claydon, Head of Data and AI Strategy at Lexical Labs"
+  navbar:
+    right:
+      - icon: linkedin
+        text: LinkedIn
+        href: https://linkedin.com
+      - icon: twitter
+        href: https://twitter.com
+      - icon: github
+        href: https://github.com/
+      - icon: rss
+        href: index.xml
+      - about.qmd
+format:
+  html:
+    theme:
+      - darkly
+      - brand
+    css: styles.css
+
+
+

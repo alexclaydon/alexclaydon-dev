@@ -1,0 +1,18 @@
+---
+title: "alexclaydon.dev"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: table
+  table-striped: true
+  table-hover: true
+  categories: false
+  sort-ui: true
+  filter-ui: true
+  date-format: full
+  feed: true
+page-layout: full
+title-block-banner: false
+---
+
+

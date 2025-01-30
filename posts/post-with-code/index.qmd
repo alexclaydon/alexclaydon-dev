@@ -1,0 +1,8 @@
+---
+title: "Post With Code"
+description: "Data is underrated."
+date: "2025-01-30"
+draft: false
+---
+
+This is a post with executable code.
