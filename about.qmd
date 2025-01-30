@@ -6,13 +6,13 @@ about:
   links:
     - icon: linkedin
       text: LinkedIn
-      href: https://linkedin.com
+      href: https://www.linkedin.com/in/alex-claydon-9369723/
     - icon: twitter
-      text: Twitter
-      href: https://twitter.com
+      text: X
+      href: https://x.com/aclaydon_dev
     - icon: github
       text: Github
-      href: https://github.com
+      href: https://github.com/alexclaydon
 
 ---
 

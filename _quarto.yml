@@ -10,11 +10,11 @@ website:
     right:
       - icon: linkedin
         text: LinkedIn
-        href: https://linkedin.com
+        href: https://www.linkedin.com/in/alex-claydon-9369723/
       - icon: twitter
-        href: https://twitter.com
+        href: https://x.com/aclaydon_dev
       - icon: github
-        href: https://github.com/
+        href: https://github.com/alexclaydon
       - icon: rss
         href: index.xml
       - about.qmd
