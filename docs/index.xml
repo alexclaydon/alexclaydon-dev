@@ -9,7 +9,7 @@
 <link>https://alexclaydon.dev/</link>
 <atom:link href="https://alexclaydon.dev/index.xml" rel="self" type="application/rss+xml"/>
 <description>Technical blog of Alex Claydon, Head of Data and AI Strategy at Lexical Labs</description>
-<generator>quarto-1.6.40</generator>
+<generator>quarto-1.6.42</generator>
 <lastBuildDate>Wed, 29 Jan 2025 15:00:00 GMT</lastBuildDate>
 <item>
   <title>The Importance of Data</title>
