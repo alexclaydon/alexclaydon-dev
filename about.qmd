@@ -5,7 +5,6 @@ about:
   template: solana
   links:
     - icon: linkedin
-      text: LinkedIn
       href: https://www.linkedin.com/in/alex-claydon-9369723/
     - icon: twitter
       text: X

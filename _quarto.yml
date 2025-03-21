@@ -9,7 +9,6 @@ website:
   navbar:
     right:
       - icon: linkedin
-        text: LinkedIn
         href: https://www.linkedin.com/in/alex-claydon-9369723/
       - icon: twitter
         href: https://x.com/aclaydon_dev
@@ -21,9 +20,7 @@ website:
 format:
   html:
     theme:
-      light: journal
-      dark: journal
-    # css: styles.css
+      - minty
 
 
 
