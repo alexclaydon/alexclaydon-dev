@@ -21,9 +21,9 @@ website:
 format:
   html:
     theme:
-      - darkly
-      - brand
-    css: styles.css
+      light: [journal, theme-light.scss]
+      dark: [journal, theme-dark.scss]
+    # css: styles.css
 
 
 
