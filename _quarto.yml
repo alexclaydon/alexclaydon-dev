@@ -21,8 +21,8 @@ website:
 format:
   html:
     theme:
-      light: [journal, theme-light.scss]
-      dark: [journal, theme-dark.scss]
+      light: journal
+      dark: journal
     # css: styles.css
 
 
