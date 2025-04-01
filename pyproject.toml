@@ -1,0 +1,8 @@
+[project]
+name = "alexclaydon-dev"
+version = "0.1.0"
+authors = [
+    { name = "Alex Claydon", email = "alexclaydon@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = ["jupyter", "matplotlib"]
