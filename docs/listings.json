@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/agentic-rag/index.html",
       "/posts/importance-of-data/index.html"
     ]
   }
