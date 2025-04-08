@@ -1,5 +1,6 @@
 ---
 title: "alexclaydon.dev"
+title-block-banner: false
 listing:
   contents: posts
   sort: "date desc"
@@ -11,8 +12,8 @@ listing:
   filter-ui: true
   date-format: full
   feed: true
-page-layout: full
-title-block-banner: false
+format:
+  html:
+    page-layout: full
+    theme: [minty, "styles/homepage_overrides.scss"]
 ---
-
-
