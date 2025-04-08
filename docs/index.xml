@@ -10,7 +10,7 @@
 <atom:link href="https://alexclaydon.dev/index.xml" rel="self" type="application/rss+xml"/>
 <description>Technical blog of Alex Claydon, Head of Data and AI Strategy at Lexical Labs</description>
 <generator>quarto-1.6.43</generator>
-<lastBuildDate>Mon, 07 Apr 2025 15:00:00 GMT</lastBuildDate>
+<lastBuildDate>Sun, 06 Apr 2025 15:00:00 GMT</lastBuildDate>
 <item>
   <title>Relevant Context, Part 1: Introduction</title>
   <link>https://alexclaydon.dev/posts/2025-04-07/</link>
@@ -127,7 +127,7 @@ Note
 </ol>
 </section></div> ]]></description>
   <guid>https://alexclaydon.dev/posts/2025-04-07/</guid>
-  <pubDate>Mon, 07 Apr 2025 15:00:00 GMT</pubDate>
+  <pubDate>Sun, 06 Apr 2025 15:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Agentic RAG, Part 1: A Primer</title>
