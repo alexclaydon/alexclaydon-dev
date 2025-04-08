@@ -112,7 +112,7 @@ Note
 <p>LLMs can prove instrumental in all of these stages - particularly when combined with time-tested data cleaning and preparation techniques.</p>
 </div>
 </div>
-<p>Notably, not covered here is how to make use of the finally composed context in an LLM-backed product or feature. We have a separate series currently underway (Part 1) on one of our own tentpole use-cases: agentic RAG for legal document analysis. We will publish additional posts on discrete use-cases at a later date. While the intended end use-case is not <em>entirely</em> decoupled from your approach to preparing and retrieving documents - and should certainly be factored when assessing the various trade-offs and compromises to be made at each stage - the approaches considerded in this series are useful precisely because they are of general application across a wide range of potential use-cases.</p>
+<p>Notably, not covered here is how to make use of the finally composed context in an LLM-backed product or feature. We have a separate series currently underway (<a href="../../posts/2025-04-02/index.html">Part 1</a>) on one of our own tentpole use-cases: agentic RAG for legal document analysis. We will publish additional posts on discrete use-cases at a later date. While the intended end use-case is not <em>entirely</em> decoupled from your approach to preparing and retrieving documents - and should certainly be factored when assessing the various trade-offs and compromises to be made at each stage - the approaches considerded in this series are useful precisely because they are of general application across a wide range of potential use-cases.</p>
 <p>There is a further practical reason: production engineering teams already have their hands full with your product: bug fixes, new features, UX design, etc. Having a single, well-designed, legible, pareto-efficient document ingestion and processing pipeline supporting a wide range of product features acknowledges the inherent importance and complexity of the task while respecting the resourcing and organisational challenges that accompany the adoption of a radically new technology.</p>
 <p>Let’s get started.</p>
 
@@ -120,7 +120,7 @@ Note
 </section>
 
 
-<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+<a onclick="window.scrollTo(0, 0); return false;" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
 <li id="fn1"><p><a href="https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/" class="uri">https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/</a>↩︎</p></li>
@@ -194,7 +194,7 @@ Note
 </section>
 
 
-<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+<a onclick="window.scrollTo(0, 0); return false;" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
 <li id="fn1"><p><a href="https://simonwillison.net/2024/Dec/31/llms-in-2024/#-agents-still-haven-t-really-happened-yet" class="uri">https://simonwillison.net/2024/Dec/31/llms-in-2024/#-agents-still-haven-t-really-happened-yet</a>↩︎</p></li>
