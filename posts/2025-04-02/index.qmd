@@ -1,14 +1,14 @@
 ---
-title: "Primer: Agentic RAG (Part 1)"
+title: "Agentic RAG, Part 1: A Primer"
 date: "2025-04-02"
-# date-modified: "2025-04-02"
+date-modified: "2025-04-07"
 
 execute:
-  freeze: auto  # re-render only when source changes
+  freeze: auto
   echo: false
 ---
 
-Swapping single LLM calls for LLM-backed "agents" leads to materially improved outcomes on retrieval-augmented generation ("RAG") tasks for legal document analysis. While additional costs are incurred, the approach is already economic for a wide range of B2B use cases and we expect token costs to continue trending downward. The substitution itself is relatively uncomplicated from an engineering standpoint, and eases the prompt engineering burden on domain experts - especially in smaller teams. While there is an impact on inference latency (that needs to be managed in the user experienced), the improved outcomes are more than worth it for high value, high risk use cases such as legal analysis.
+Swapping single LLM calls for LLM-backed "agents" leads to materially improved outcomes on retrieval-augmented generation ("RAG") tasks for legal document analysis. While additional costs are incurred, the approach is already economic for a wide range of B2B use cases and we expect token costs to continue trending downward. The substitution itself is relatively uncomplicated from an engineering standpoint, and eases the prompt engineering burden on domain experts - especially in smaller teams. While there is an impact on inference latency (that needs to be managed in the user experience), the improved outcomes are more than worth it for high value, high risk use cases such as legal analysis.
 
 This post - Part 1 - aims to help readers situate agentic RAG in their product stack by considering technological constraints, trade-offs and the likely direction of developments going forward. Part 2, to follow, will compare and contrast two illustrative implementations of agentic behaviour in the context of legal document analysis using the `smolagents` and `DSpy` libraries.
 

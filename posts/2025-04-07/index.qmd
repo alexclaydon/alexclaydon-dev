@@ -1,0 +1,96 @@
+---
+title: "Relevant Context, Part 1: Introduction"
+date: "2025-04-08"
+
+execute:
+  freeze: auto
+  echo: false
+---
+
+LLMs are capable of supporting unprecedented new capabilities for legal document analysis. Tasks which were previously beyond even the most cutting-edge AI tools are becoming feasible: automated document summaries, risk analysis (e.g., against arbitrary playbooks) and real-time document Q&A, for instance, are already available to all of our customers.
+
+The the principal challenge for all these use cases - and almost all others involving LLMs in the legal domain - is, and will for the foreseeable future remain, _how to get relevant context to the LLM_.
+
+This post is the first in a planned series exploring practical and workable approaches to the systematic provision of relevant context to LLMs for legal document analysis. The posts will be technical in nature and will focus on current state-of-the-art approaches. We intend to tackle blind spots and difficult trade-offs head-on, rather than hand-waving away the many complexities of this fast-moving area.
+
+## Scope
+
+What constitutes "relevant context" in the context of legal analysis - indeed in any information retrieval context - can be tough to pin down. It is a function of the question being asked, the identity of the person or party asking it, the nature or type of document or documents in question, and myriad other epistemological factors.
+
+While all interesting questions, for practical purposes we will avail ourselves of a proxy: context is "relevant" if a reasonable legal practitioner would consider it so. Note that we need to ensure both that no relevant context is missing (false negatives) and, ideally, that we don't pollute the LLM's context window with _irrelevant_ context (false positives). In practice, LLMs are more robust to false positives: as such, where trade-offs between the two are required, we should favour approaches which minimise false negatives.
+
+Equally, there are open questions around "how" LLMs make use of the context provided to them: do they prefer certain formats? Does the order in which context is presented matter? Should we - and, if so, _how_ should we - "transform" context to make it more LLM-friendly? As LLMs are ablative black boxes, we don't have good direct answers to those questions[^1]; instead, we rely on indirect means: observational research (including by third parties) and extensive in-domain permutation testing performed as part of Lexical Labs' comprehensive in-house legal evaluations ("evals") programme.
+
+Those questions warrant their own in-depth posts, but to keep this series applicable to as wide a range of practitioners as possible, we again choose to work with a proxy - one that is reasonably well-aligned with the fundamental architecture of LLMs as stochastic next-token predictors trained on a corpus of natural language text: we assume that LLMs are pareto-effective when receiving information presented in a form that is legible and comprehensible to a human. For example, a human legal practitioner may have expections as to where certain bits of information are located in a legal contract (parties and definitions up front, schedules in the back); our working assumption for the purpose of these posts is that using the existing inherent structure of a document will not materially prejudice LLM comprehension versus alternative hypothetical approaches. It's an assumption we'll revisit in detail in later technical posts - in the context of knowledge graphs in particular.
+
+## Topics Covered
+
+When considering what ground to cover in this series, it is perhaps helpful to think at different levels of abstraction about what we're trying to achieve.
+
+At the highest level, the task for any LLM-backed legal document analysis system is to take a document (or documents), a user query about the document, and respond in a manner that answer's the query to the satisfaction of the user.
+
+```{mermaid}
+flowchart LR
+  A(Query)
+  B(Document)
+  C{LLM}
+  A --> C
+  B --> C
+  C --> D(Answer)
+```
+
+The first question that presents itself is: which document? For any query which may be answered with certainty without going outside the bounds of a single, identifiable, document, this looks easy enough. But any scalable systemic approach to AI document analysis must be capable of operating across more than one document.
+
+And since we know that LLM context windows are not now, nor are they ever likely to be, infinite, and that the ability of an LLM to leverage all provided tokens appears to drop off asymptotically as context window size increases as an inherent consequence of the transformer architecture, we can derive from first principles that we should expect superior results from maximising _relevant_ context and minimising pollution of the context window with _irrelevant_ context. That result is certainly supported anecdotally by our own real-world experience, and by that of many other parties working with LLMs on a daily basis.
+
+As such, we can now reframe our original question in more specific terms: which parts, of which documents, should we provide?
+
+```{mermaid}
+flowchart LR
+  i(Clause)
+  iv(Clause)
+  vii(Clause)
+  viii(Definitions)
+  ix(Definitions)
+
+  i --> 2
+  iv --> 2
+  vii --> 1
+  viii --> 1
+  ix --> 2
+
+  1[Document]
+  2[Document]
+  1 --> B
+  2 --> B
+
+  A(Query)
+  B(Context)
+  C{LLM}
+  A --> C
+  B --> C
+  C --> D(Answer)
+```
+
+It follows that, concretely speaking, the tooling we need to answer this question is: (i) a means of identifying and retrieving relevant documents from an arbitrarily-sized corpus, and (ii) a means of identifying and extracting each relevant _part_ of each such releant document without doing harm to the semantic meaning of that part. This last task is - perhaps intuitively - the trickiest: an indemnity clause can be outright misleading if excised from the context of applicable exceptions.
+
+From this we derive us our list of topics to be covered in this series:
+
+1. **Ingestion**: Systematically and reliably transforming documents (`.docx`, `.pdf`, `.xlsx`, etc.) into LLM-readable form at scale.
+2. **Document Enhancement**: Extracting existing metadata, and creating new metadata, for use primarily as "facets" to aid the process of discriminating relevant documents from irrelevant documents.
+3. **Chunking**: The principled splitting of documents into components which stand semantically on their own (or with minimal external context ascertainable in advance).
+4. **Chunk Enhancement**: Processing document chunks to aid in later retrieval.
+5. **Query Enhancement**: Processing the user's query to aid in the determination of relevance.
+6. **Retrieval**: Identifying and retrieving chunks from documents relevant to, and capable of supporting a satisfactory answer to, the user's query, and presenting them in a sensible form to the downstream LLM tasked with responding.
+
+::: {.callout-note}
+LLMs can prove instrumental in all of these stages - particularly when combined with time-tested data cleaning and preparation techniques.
+:::
+
+Notably, not covered here is how to make use of the finally composed context in an LLM-backed product or feature. We have a separate series currently underway (Part 1) on one of our own tentpole use-cases: agentic RAG for legal document analysis. We will publish additional posts on discrete use-cases at a later date. While the intended end use-case is not _entirely_ decoupled from your approach to preparing and retrieving documents - and should certainly be factored when assessing the various trade-offs and compromises to be made at each stage - the approaches considerded in this series are useful precisely because they are of general application across a wide range of potential use-cases. 
+
+There is a further practical reason: production engineering teams already have their hands full with your product: bug fixes, new features, UX design, etc. Having a single, well-designed, legible, pareto-efficient document ingestion and processing pipeline supporting a wide range of product features acknowledges the inherent importance and complexity of the task while respecting the resourcing and organisational challenges that accompany the adoption of a radically new technology.
+
+Let's get started.
+
+[^1]: <https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/>

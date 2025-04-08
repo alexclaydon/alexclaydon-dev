@@ -9,17 +9,135 @@
 <link>https://alexclaydon.dev/</link>
 <atom:link href="https://alexclaydon.dev/index.xml" rel="self" type="application/rss+xml"/>
 <description>Technical blog of Alex Claydon, Head of Data and AI Strategy at Lexical Labs</description>
-<generator>quarto-1.6.42</generator>
-<lastBuildDate>Tue, 01 Apr 2025 15:00:00 GMT</lastBuildDate>
+<generator>quarto-1.6.43</generator>
+<lastBuildDate>Mon, 07 Apr 2025 15:00:00 GMT</lastBuildDate>
 <item>
-  <title>Primer: Agentic RAG (Part 1)</title>
-  <link>https://alexclaydon.dev/posts/agentic-rag/</link>
+  <title>Relevant Context, Part 1: Introduction</title>
+  <link>https://alexclaydon.dev/posts/2025-04-07/</link>
   <description><![CDATA[ 
 
 
 
 
-<p>Swapping single LLM calls for LLM-backed “agents” leads to materially improved outcomes on retrieval-augmented generation (“RAG”) tasks for legal document analysis. While additional costs are incurred, the approach is already economic for a wide range of B2B use cases and we expect token costs to continue trending downward. The substitution itself is relatively uncomplicated from an engineering standpoint, and eases the prompt engineering burden on domain experts - especially in smaller teams. While there is an impact on inference latency (that needs to be managed in the user experienced), the improved outcomes are more than worth it for high value, high risk use cases such as legal analysis.</p>
+<p>LLMs are capable of supporting unprecedented new capabilities for legal document analysis. Tasks which were previously beyond even the most cutting-edge AI tools are becoming feasible: automated document summaries, risk analysis (e.g., against arbitrary playbooks) and real-time document Q&amp;A, for instance, are already available to all of our customers.</p>
+<p>The the principal challenge for all these use cases - and almost all others involving LLMs in the legal domain - is, and will for the foreseeable future remain, <em>how to get relevant context to the LLM</em>.</p>
+<p>This post is the first in a planned series exploring practical and workable approaches to the systematic provision of relevant context to LLMs for legal document analysis. The posts will be technical in nature and will focus on current state-of-the-art approaches. We intend to tackle blind spots and difficult trade-offs head-on, rather than hand-waving away the many complexities of this fast-moving area.</p>
+<section id="scope" class="level2">
+<h2 class="anchored" data-anchor-id="scope">Scope</h2>
+<p>What constitutes “relevant context” in the context of legal analysis - indeed in any information retrieval context - can be tough to pin down. It is a function of the question being asked, the identity of the person or party asking it, the nature or type of document or documents in question, and myriad other epistemological factors.</p>
+<p>While all interesting questions, for practical purposes we will avail ourselves of a proxy: context is “relevant” if a reasonable legal practitioner would consider it so. Note that we need to ensure both that no relevant context is missing (false negatives) and, ideally, that we don’t pollute the LLM’s context window with <em>irrelevant</em> context (false positives). In practice, LLMs are more robust to false positives: as such, where trade-offs between the two are required, we should favour approaches which minimise false negatives.</p>
+<p>Equally, there are open questions around “how” LLMs make use of the context provided to them: do they prefer certain formats? Does the order in which context is presented matter? Should we - and, if so, <em>how</em> should we - “transform” context to make it more LLM-friendly? As LLMs are ablative black boxes, we don’t have good direct answers to those questions<sup>1</sup>; instead, we rely on indirect means: observational research (including by third parties) and extensive in-domain permutation testing performed as part of Lexical Labs’ comprehensive in-house legal evaluations (“evals”) programme.</p>
+<p>Those questions warrant their own in-depth posts, but to keep this series applicable to as wide a range of practitioners as possible, we again choose to work with a proxy - one that is reasonably well-aligned with the fundamental architecture of LLMs as stochastic next-token predictors trained on a corpus of natural language text: we assume that LLMs are pareto-effective when receiving information presented in a form that is legible and comprehensible to a human. For example, a human legal practitioner may have expections as to where certain bits of information are located in a legal contract (parties and definitions up front, schedules in the back); our working assumption for the purpose of these posts is that using the existing inherent structure of a document will not materially prejudice LLM comprehension versus alternative hypothetical approaches. It’s an assumption we’ll revisit in detail in later technical posts - in the context of knowledge graphs in particular.</p>
+</section>
+<section id="topics-covered" class="level2">
+<h2 class="anchored" data-anchor-id="topics-covered">Topics Covered</h2>
+<p>When considering what ground to cover in this series, it is perhaps helpful to think at different levels of abstraction about what we’re trying to achieve.</p>
+<p>At the highest level, the task for any LLM-backed legal document analysis system is to take a document (or documents), a user query about the document, and respond in a manner that answer’s the query to the satisfaction of the user.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+  A(Query)
+  B(Document)
+  C{LLM}
+  A --&gt; C
+  B --&gt; C
+  C --&gt; D(Answer)
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>The first question that presents itself is: which document? For any query which may be answered with certainty without going outside the bounds of a single, identifiable, document, this looks easy enough. But any scalable systemic approach to AI document analysis must be capable of operating across more than one document.</p>
+<p>And since we know that LLM context windows are not now, nor are they ever likely to be, infinite, and that the ability of an LLM to leverage all provided tokens appears to drop off asymptotically as context window size increases as an inherent consequence of the transformer architecture, we can derive from first principles that we should expect superior results from maximising <em>relevant</em> context and minimising pollution of the context window with <em>irrelevant</em> context. That result is certainly supported anecdotally by our own real-world experience, and by that of many other parties working with LLMs on a daily basis.</p>
+<p>As such, we can now reframe our original question in more specific terms: which parts, of which documents, should we provide?</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+  i(Clause)
+  iv(Clause)
+  vii(Clause)
+  viii(Definitions)
+  ix(Definitions)
+
+  i --&gt; 2
+  iv --&gt; 2
+  vii --&gt; 1
+  viii --&gt; 1
+  ix --&gt; 2
+
+  1[Document]
+  2[Document]
+  1 --&gt; B
+  2 --&gt; B
+
+  A(Query)
+  B(Context)
+  C{LLM}
+  A --&gt; C
+  B --&gt; C
+  C --&gt; D(Answer)
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>It follows that, concretely speaking, the tooling we need to answer this question is: (i) a means of identifying and retrieving relevant documents from an arbitrarily-sized corpus, and (ii) a means of identifying and extracting each relevant <em>part</em> of each such releant document without doing harm to the semantic meaning of that part. This last task is - perhaps intuitively - the trickiest: an indemnity clause can be outright misleading if excised from the context of applicable exceptions.</p>
+<p>From this we derive us our list of topics to be covered in this series:</p>
+<ol type="1">
+<li><strong>Ingestion</strong>: Systematically and reliably transforming documents (<code>.docx</code>, <code>.pdf</code>, <code>.xlsx</code>, etc.) into LLM-readable form at scale.</li>
+<li><strong>Document Enhancement</strong>: Extracting existing metadata, and creating new metadata, for use primarily as “facets” to aid the process of discriminating relevant documents from irrelevant documents.</li>
+<li><strong>Chunking</strong>: The principled splitting of documents into components which stand semantically on their own (or with minimal external context ascertainable in advance).</li>
+<li><strong>Chunk Enhancement</strong>: Processing document chunks to aid in later retrieval.</li>
+<li><strong>Query Enhancement</strong>: Processing the user’s query to aid in the determination of relevance.</li>
+<li><strong>Retrieval</strong>: Identifying and retrieving chunks from documents relevant to, and capable of supporting a satisfactory answer to, the user’s query, and presenting them in a sensible form to the downstream LLM tasked with responding.</li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>LLMs can prove instrumental in all of these stages - particularly when combined with time-tested data cleaning and preparation techniques.</p>
+</div>
+</div>
+<p>Notably, not covered here is how to make use of the finally composed context in an LLM-backed product or feature. We have a separate series currently underway (Part 1) on one of our own tentpole use-cases: agentic RAG for legal document analysis. We will publish additional posts on discrete use-cases at a later date. While the intended end use-case is not <em>entirely</em> decoupled from your approach to preparing and retrieving documents - and should certainly be factored when assessing the various trade-offs and compromises to be made at each stage - the approaches considerded in this series are useful precisely because they are of general application across a wide range of potential use-cases.</p>
+<p>There is a further practical reason: production engineering teams already have their hands full with your product: bug fixes, new features, UX design, etc. Having a single, well-designed, legible, pareto-efficient document ingestion and processing pipeline supporting a wide range of product features acknowledges the inherent importance and complexity of the task while respecting the resourcing and organisational challenges that accompany the adoption of a radically new technology.</p>
+<p>Let’s get started.</p>
+
+
+</section>
+
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p><a href="https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/" class="uri">https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/</a>↩︎</p></li>
+</ol>
+</section></div> ]]></description>
+  <guid>https://alexclaydon.dev/posts/2025-04-07/</guid>
+  <pubDate>Mon, 07 Apr 2025 15:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Agentic RAG, Part 1: A Primer</title>
+  <link>https://alexclaydon.dev/posts/2025-04-02/</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>Swapping single LLM calls for LLM-backed “agents” leads to materially improved outcomes on retrieval-augmented generation (“RAG”) tasks for legal document analysis. While additional costs are incurred, the approach is already economic for a wide range of B2B use cases and we expect token costs to continue trending downward. The substitution itself is relatively uncomplicated from an engineering standpoint, and eases the prompt engineering burden on domain experts - especially in smaller teams. While there is an impact on inference latency (that needs to be managed in the user experience), the improved outcomes are more than worth it for high value, high risk use cases such as legal analysis.</p>
 <p>This post - Part 1 - aims to help readers situate agentic RAG in their product stack by considering technological constraints, trade-offs and the likely direction of developments going forward. Part 2, to follow, will compare and contrast two illustrative implementations of agentic behaviour in the context of legal document analysis using the <code>smolagents</code> and <code>DSpy</code> libraries.</p>
 <section id="context-and-technological-constraints" class="level2">
 <h2 class="anchored" data-anchor-id="context-and-technological-constraints">Context and Technological Constraints</h2>
@@ -89,26 +207,8 @@
 <li id="fn8"><p><a href="https://arxiv.org/pdf/2310.03714" class="uri">https://arxiv.org/pdf/2310.03714</a>↩︎</p></li>
 </ol>
 </section></div> ]]></description>
-  <guid>https://alexclaydon.dev/posts/agentic-rag/</guid>
+  <guid>https://alexclaydon.dev/posts/2025-04-02/</guid>
   <pubDate>Tue, 01 Apr 2025 15:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>The Importance of Data</title>
-  <link>https://alexclaydon.dev/posts/importance-of-data/</link>
-  <description><![CDATA[ 
-
-
-
-
-<p>LLMs present enormous opportunity but can also lead to organisational ”analysis paralysis”: Where and when do we start? How do we generate actual value? Should we wait for the models to mature? How do we position ourselves for the future?</p>
-<p>Different verticals have their own requirements, and the challenges are substantial. But in our experience, the correct starting point is already clear: focus on your data. Organisations that start now and focus on the creation, collection and curation of data - and the infrastructure to support it - will dominate.</p>
-<p>The new technology does mandate some changes to what is created and collected, but the bulk of the work lies in rigorously applying techniques which are already well-understood - but rarely well-implemented.</p>
-
-
-
- ]]></description>
-  <guid>https://alexclaydon.dev/posts/importance-of-data/</guid>
-  <pubDate>Wed, 29 Jan 2025 15:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>

@@ -2,13 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.6.42">
+<meta name="generator" content="quarto-1.6.43">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-04-02">
+<meta name="dcterms.date" content="2025-04-08">
 
-<title>Primer: Agentic RAG (Part 1) – alexclaydon.dev</title>
+<title>Relevant Context, Part 1: Introduction – alexclaydon.dev</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -36,7 +36,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-d4d76bf8491c20bad77d141916dc28e1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../site_libs/bootstrap/bootstrap-530bf8e59df25186f8bffdc63bad3503.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -67,6 +67,9 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="../../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 </head>
@@ -129,7 +132,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Primer: Agentic RAG (Part 1)</h1>
+<h1 class="title">Relevant Context, Part 1: Introduction</h1>
 </div>
 
 
@@ -140,7 +143,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 2, 2025</p>
+      <p class="date">April 8, 2025</p>
     </div>
   </div>
   
@@ -152,58 +155,102 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Swapping single LLM calls for LLM-backed “agents” leads to materially improved outcomes on retrieval-augmented generation (“RAG”) tasks for legal document analysis. While additional costs are incurred, the approach is already economic for a wide range of B2B use cases and we expect token costs to continue trending downward. The substitution itself is relatively uncomplicated from an engineering standpoint, and eases the prompt engineering burden on domain experts - especially in smaller teams. While there is an impact on inference latency (that needs to be managed in the user experienced), the improved outcomes are more than worth it for high value, high risk use cases such as legal analysis.</p>
-<p>This post - Part 1 - aims to help readers situate agentic RAG in their product stack by considering technological constraints, trade-offs and the likely direction of developments going forward. Part 2, to follow, will compare and contrast two illustrative implementations of agentic behaviour in the context of legal document analysis using the <code>smolagents</code> and <code>DSpy</code> libraries.</p>
-<section id="context-and-technological-constraints" class="level2">
-<h2 class="anchored" data-anchor-id="context-and-technological-constraints">Context and Technological Constraints</h2>
-<p>LLM “agent” frameworks built around large parameter-count foundation model inference over API received a lot of attention during 2023-2024. As with LLMs more generally, users were happy to trade the customisability and privacy of open source models and in-house inference stacks for the vastly more capable larger models and the freedom from having to run their own inference stacks on scarce hardware. Consumer GPU supply was still constrained by pandemic-era knock-on, and most new production capacity was (and is) going to data centre cards. GPT3.5 over API was often radically cheaper than running any of Meta’s early Llama models in-house, for instance, as well as being more performant. That cost equation remains true today, although smaller open source models in the hands of knowledgeable practitioners are now genuinely useful for a variety of use cases.</p>
-<p>Other trade-offs were also accepted - the lack of context-free grammar support, control over logit bias, and the entire post-training and RLHF process, for instance - because the performance gap was so compelling. Function calling support, in particular, was crucial to bridging the gap. While reliability was initially an issue, those concerns have now largely been put to rest even for lower parameter-count LLMs.</p>
-<p>The effect of these conditions on efforts to spin up useful LLM-backed agents has only recently become clear, and may provide an interesting signal as to where the current big model and inference providers - such as OpenAI - see value being created and captured.</p>
+<p>LLMs are capable of supporting unprecedented new capabilities for legal document analysis. Tasks which were previously beyond even the most cutting-edge AI tools are becoming feasible: automated document summaries, risk analysis (e.g., against arbitrary playbooks) and real-time document Q&amp;A, for instance, are already available to all of our customers.</p>
+<p>The the principal challenge for all these use cases - and almost all others involving LLMs in the legal domain - is, and will for the foreseeable future remain, <em>how to get relevant context to the LLM</em>.</p>
+<p>This post is the first in a planned series exploring practical and workable approaches to the systematic provision of relevant context to LLMs for legal document analysis. The posts will be technical in nature and will focus on current state-of-the-art approaches. We intend to tackle blind spots and difficult trade-offs head-on, rather than hand-waving away the many complexities of this fast-moving area.</p>
+<section id="scope" class="level2">
+<h2 class="anchored" data-anchor-id="scope">Scope</h2>
+<p>What constitutes “relevant context” in the context of legal analysis - indeed in any information retrieval context - can be tough to pin down. It is a function of the question being asked, the identity of the person or party asking it, the nature or type of document or documents in question, and myriad other epistemological factors.</p>
+<p>While all interesting questions, for practical purposes we will avail ourselves of a proxy: context is “relevant” if a reasonable legal practitioner would consider it so. Note that we need to ensure both that no relevant context is missing (false negatives) and, ideally, that we don’t pollute the LLM’s context window with <em>irrelevant</em> context (false positives). In practice, LLMs are more robust to false positives: as such, where trade-offs between the two are required, we should favour approaches which minimise false negatives.</p>
+<p>Equally, there are open questions around “how” LLMs make use of the context provided to them: do they prefer certain formats? Does the order in which context is presented matter? Should we - and, if so, <em>how</em> should we - “transform” context to make it more LLM-friendly? As LLMs are ablative black boxes, we don’t have good direct answers to those questions<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>; instead, we rely on indirect means: observational research (including by third parties) and extensive in-domain permutation testing performed as part of Lexical Labs’ comprehensive in-house legal evaluations (“evals”) programme.</p>
+<p>Those questions warrant their own in-depth posts, but to keep this series applicable to as wide a range of practitioners as possible, we again choose to work with a proxy - one that is reasonably well-aligned with the fundamental architecture of LLMs as stochastic next-token predictors trained on a corpus of natural language text: we assume that LLMs are pareto-effective when receiving information presented in a form that is legible and comprehensible to a human. For example, a human legal practitioner may have expections as to where certain bits of information are located in a legal contract (parties and definitions up front, schedules in the back); our working assumption for the purpose of these posts is that using the existing inherent structure of a document will not materially prejudice LLM comprehension versus alternative hypothetical approaches. It’s an assumption we’ll revisit in detail in later technical posts - in the context of knowledge graphs in particular.</p>
 </section>
-<section id="why-agency-matters" class="level2">
-<h2 class="anchored" data-anchor-id="why-agency-matters">Why “Agency” Matters</h2>
-<p>Attempts to define what constitutes an “agent” under the new regime are famously fraught.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> The blue-sky prospects are intriguing, but when it comes to using LLMs in legal document analysis, arguably the most compelling application in the present is in improving RAG outcomes.</p>
-<p>We’re working on a separate post on the merits of RAG systems versus alternative approaches and on preparing your legal documents for use with such systems. For the purposes of this post, suffice to say that the inherent ability of agents to “reflect” and course-correct during the analytical process is an excellent mitigant to the inherent limitations of even current state-of-the-art approaches to RAG.</p>
-<p>Agentic RAG is robust to:</p>
-<ul>
-<li>a wide variety of applications;</li>
-<li>compared to single LLM calls, a wider range of approaches to document preparation; and</li>
-<li>compared to single LLM calls, a wider range of variation in input prompt quality,</li>
-</ul>
-<p>potentially allowing teams to depreciate engineering and implementation costs across a range of product features.</p>
-<p>The principal downsides are:</p>
-<ul>
-<li>increased latency; and</li>
-<li>increased inference costs,</li>
-</ul>
-<p>although we expect technological advances will continue to improve both of these.</p>
-<p>Given the ease of substituting existing RAG systems with an agentic RAG approach, we expect agentic RAG to largely replace most current approaches based on carefully crafted system prompts and single LLM calls in most quality-sensitive domains.</p>
-</section>
-<section id="comparison-with-single-call-approaches" class="level2">
-<h2 class="anchored" data-anchor-id="comparison-with-single-call-approaches">Comparison with Single-Call Approaches</h2>
-<p>All of which papers over perhaps the biggest technical question: how does it work?</p>
-<p>A good starting point might be comparison against canonical “single LLM call” approaches to analystical queries in the legal domain. A user is interested in knowing something about a document that requires more than just searching: they need some kind of synthesis, and analysis, of the contents of the document or documents in order to satisfy an information need.</p>
-<p>A domain specialist - a lawyer or legal engineer, perhaps - will have prepared the model in advance by carefully crafting a system prompt defining a common (as in: used for a variety of applications) specification to help guide the model’s spend of reasoning tokens: “Do this, don’t do that; focus on this, ignore that; contracts provided to you will be governed by English law”. More sophisticated approaches may craft this “framing” prompt dynamically, from information extracted from the document in advance of the user sitting down to interact with the system: “The parties are A and B, incorporated in the United Kingdom; the subject matter is a lease of commercial property located in Manchester, England; disputes shall be resolved through arbitration”. This lightens the load on the end user, who can simply sit down and say: “Summarise the payment terms with a particular focus on the consequences of a failure to pay on time”.</p>
-<p>The process may not <em>literally</em> be single-call: many systems are likely to perform some degree of error correction and/or post-processing on the result sent back by the LLM. The more cycles and tokens you spend on error correction and post-processing, the more a single-call approach starts to resemble a “loop” in an “untrained” agentic system - particularly if control over the determination of when a response is ready to be seen by the user is largely handed over to the model. So in reality, when it comes to untrained agent systems, there’s a spectrum, with agentic systems handing near-complete control over decision-making to a “managing” agent. “Trained” agent systems are altogether different - something we’ll explore towards the end of the article.</p>
-<p>Careful crafting of the system prompt remains an important step. Teams can and should be creating context and/or document specific framing prompts dynamically from information pre-extracted from the document(s). But by empowering the agent to more aggressively decompose the problem and make active judgements about quality - as we will see below - results in materially improved outcomes and consistency.</p>
-<p>We’ll consider a concrete implementation of an untrained agent below, but first, it’s worth looking at developments in the LLM agent space in the first few months of 2025, which have thrown into sharp relief an emerging two-track system for LLM agents and a concerted attempt by model and inference providers - OpenAI in particular - to try to re-capture some of the value lost to the preponderance of high-quality open-source models.</p>
-</section>
-<section id="agency-untrained-or-trained" class="level2">
-<h2 class="anchored" data-anchor-id="agency-untrained-or-trained">Agency: Untrained or Trained?</h2>
-<p>Limited foundation model customisability has led to most popular open-source frameworks modelling their agentic approaches as directed cyclic or acyclic graphs - an approach common in robotic process automation (RPA) and workflow systems. This is effectively the “untrained agent” end of the spectrum discussed above.</p>
-<p>Different frameworks abstract different aspects of the process of building the graph, so to speak, but all of them rely on establishing and exploiting a manager/managed relationship between multiple unrelated LLM call contexts. Though these approaches have proven fruitful, they create agency through artifice: the models themselves have no particular internal specialisation in performing agentic behaviours, so we create the desired effect with duelling tokens. Encapsulating relevant context analysis behind the “managed” LLM’s context window, and the output approval process behind that of the “manager” LLM is part of the point, but it is not without trade-offs. The extent of those trade-offs depends in part on the concrete implementation and use-case, and can be hard to measure empirically. But until this year, the point was moot: there was no other way for end-users of the most powerful LLMs provided over inference API to approach the task.</p>
-<p>On 2 February 2025, OpenAI introduced the “Deep Research” mode in their B2C-facing ChatGPT apps. The rollout to Pro and Plus customers only finished recently, on 25 February. With the caveat that we cannot know for certain how OpenAI is doing what they do - since Deep Research was developed, like all of OpenAI’s products, behind closed doors - informed consensus is that the approach likely involves post-training the LLM with a reward function to select for, and enhance, desirable agentic behaviours such as reflection and error correction as part of the token generation process. Unlike untrained agents, which produce one “cycle” of thought and then are asked by a separate LLM to assess and reconsider their output, the process in trained agents occurs internally: from the user perspective, a question is asked and a high-quality response returned - albeit with higher latency than in single-call scenarios. Decisions on how to improve a piece of analysis, and when it is good enough to return to the user, are all handled by the same LLM, in the same context window.</p>
-<p>It is early days for Deep Research. Competitors such as Google and Perplexity have released product features with similar names and behaviour that appears superficially similar to OpenAI’s offering. While it is too early for empirical confirmation, subjectively, the ouput produced by a trained agent - or, at least, OpenAI’s Deep Research - is head and shoulders above anything currently possible with untrained agents. OpenAI has not indicated whether a “Deep Research”-like feature will be made available through its API offering. All current signs seem to indicate that features like this represent OpenAI’s attempt to move up the value stack and claw back some of the value lost competitors and the recent spate of incredibly capable open-source models. As such, we would not be surprised if Deep Research continues to be absent from the API for the foreseeable future - at least until another provider commoditises a similarly compelling feature. We think it unlikely that features like this will form the basis of a sustainable moat for OpenAI. The story of the past two years has been that well-capitlised pathfinders like OpenAI are quickly swamped by fast-followers such as Meta and DeepSeek. But, at least for now, those of us implementing agentic behaviours into our products - including for RAG - must make do with existing untrained approaches.</p>
-<p>You can find interesting in-depth discussion of the “trained vs untrained” dichotomy, and what it may mean for value creation and capture going forward, <a href="https://leehanchung.github.io/blogs/2025/02/26/deep-research/">here</a> and <a href="https://vintagedata.org/blog/posts/designing-llm-agents">here</a>.</p>
-</section>
-<section id="untrained-agent-implementations" class="level2">
-<h2 class="anchored" data-anchor-id="untrained-agent-implementations">Untrained Agent Implementations</h2>
-<p>In our next post, we propose to walk through two contrasting implementations of agentic RAG in some detail, in the hope that readers may find the concrete examples useful in implementing their own agentic RAG pipelines.</p>
-<p>There are far too many open-source frameworks enabling agentic behaviour (for some definition of “agentic”) to cover in detail in one post. In any event, the similarity of approaches - a product of them all being confined to “untrained” approaches - would render such exercise of dubious value.</p>
-<p>Instead, we intend to take a high-level look at just two: Hugging Face’s <code>smolagents</code>, and Stanford NLP’s <code>DSpy</code>.</p>
-<p><code>smolagents</code><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> is notable for 3 reasons. First, Hugging Face is a giant in the open source machine learning space, thanks in large part to its widely used <code>transformers</code><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> library and its community model and dataset sharing platform, Hugging Face Hub. Second, <code>smolagents</code> itself is committed to being a “low-abstraction” library - unlike, say, <code>LangChain</code><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. This makes it a good fit for prototyping, easy to integrate and - most importantly for our purposes - the code is easy to read and easy to reason about. Third, <code>smolagents</code> takes a somewhat novel approach to writing tool definitions that readers may not have seen before<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>: instead of JSON, actions are written in Python code. In addition, Hugging Face recently published a blog post covering their own toy untrained re-implementation of OpenAI’s Deep Research feature in the <code>smolagents</code> library.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
-<p>Stanford NLP’s <code>DSpy</code><a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> is interesting for different reasons, with the chosen approach contrasting nicely with <code>smolagents</code>. <code>DSpy</code> was launched in late 2023 with an Arxiv paper<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> that made waves. <code>DSpy</code>’s main value proposition has always been its focus on automated pipeline and prompt optimisation. <code>DSPy</code> approach is proving particularly impactful in the context of setting up untrained agents - including for RAG. Since the links between “manager” and “managed” LLMs in an agentic arrangement are, essentially, prompts, the brittle nature of prompts produced using traditional prompt engineering techniques has weighed heavily on performance.</p>
-<p>We look forward to seeing you again for the follow-up.</p>
+<section id="topics-covered" class="level2">
+<h2 class="anchored" data-anchor-id="topics-covered">Topics Covered</h2>
+<p>When considering what ground to cover in this series, it is perhaps helpful to think at different levels of abstraction about what we’re trying to achieve.</p>
+<p>At the highest level, the task for any LLM-backed legal document analysis system is to take a document (or documents), a user query about the document, and respond in a manner that answer’s the query to the satisfaction of the user.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+  A(Query)
+  B(Document)
+  C{LLM}
+  A --&gt; C
+  B --&gt; C
+  C --&gt; D(Answer)
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>The first question that presents itself is: which document? For any query which may be answered with certainty without going outside the bounds of a single, identifiable, document, this looks easy enough. But any scalable systemic approach to AI document analysis must be capable of operating across more than one document.</p>
+<p>And since we know that LLM context windows are not now, nor are they ever likely to be, infinite, and that the ability of an LLM to leverage all provided tokens appears to drop off asymptotically as context window size increases as an inherent consequence of the transformer architecture, we can derive from first principles that we should expect superior results from maximising <em>relevant</em> context and minimising pollution of the context window with <em>irrelevant</em> context. That result is certainly supported anecdotally by our own real-world experience, and by that of many other parties working with LLMs on a daily basis.</p>
+<p>As such, we can now reframe our original question in more specific terms: which parts, of which documents, should we provide?</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+  i(Clause)
+  iv(Clause)
+  vii(Clause)
+  viii(Definitions)
+  ix(Definitions)
+
+  i --&gt; 2
+  iv --&gt; 2
+  vii --&gt; 1
+  viii --&gt; 1
+  ix --&gt; 2
+
+  1[Document]
+  2[Document]
+  1 --&gt; B
+  2 --&gt; B
+
+  A(Query)
+  B(Context)
+  C{LLM}
+  A --&gt; C
+  B --&gt; C
+  C --&gt; D(Answer)
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>It follows that, concretely speaking, the tooling we need to answer this question is: (i) a means of identifying and retrieving relevant documents from an arbitrarily-sized corpus, and (ii) a means of identifying and extracting each relevant <em>part</em> of each such releant document without doing harm to the semantic meaning of that part. This last task is - perhaps intuitively - the trickiest: an indemnity clause can be outright misleading if excised from the context of applicable exceptions.</p>
+<p>From this we derive us our list of topics to be covered in this series:</p>
+<ol type="1">
+<li><strong>Ingestion</strong>: Systematically and reliably transforming documents (<code>.docx</code>, <code>.pdf</code>, <code>.xlsx</code>, etc.) into LLM-readable form at scale.</li>
+<li><strong>Document Enhancement</strong>: Extracting existing metadata, and creating new metadata, for use primarily as “facets” to aid the process of discriminating relevant documents from irrelevant documents.</li>
+<li><strong>Chunking</strong>: The principled splitting of documents into components which stand semantically on their own (or with minimal external context ascertainable in advance).</li>
+<li><strong>Chunk Enhancement</strong>: Processing document chunks to aid in later retrieval.</li>
+<li><strong>Query Enhancement</strong>: Processing the user’s query to aid in the determination of relevance.</li>
+<li><strong>Retrieval</strong>: Identifying and retrieving chunks from documents relevant to, and capable of supporting a satisfactory answer to, the user’s query, and presenting them in a sensible form to the downstream LLM tasked with responding.</li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>LLMs can prove instrumental in all of these stages - particularly when combined with time-tested data cleaning and preparation techniques.</p>
+</div>
+</div>
+<p>Notably, not covered here is how to make use of the finally composed context in an LLM-backed product or feature. We have a separate series currently underway (Part 1) on one of our own tentpole use-cases: agentic RAG for legal document analysis. We will publish additional posts on discrete use-cases at a later date. While the intended end use-case is not <em>entirely</em> decoupled from your approach to preparing and retrieving documents - and should certainly be factored when assessing the various trade-offs and compromises to be made at each stage - the approaches considerded in this series are useful precisely because they are of general application across a wide range of potential use-cases.</p>
+<p>There is a further practical reason: production engineering teams already have their hands full with your product: bug fixes, new features, UX design, etc. Having a single, well-designed, legible, pareto-efficient document ingestion and processing pipeline supporting a wide range of product features acknowledges the inherent importance and complexity of the task while respecting the resourcing and organisational challenges that accompany the adoption of a radically new technology.</p>
+<p>Let’s get started.</p>
 
 
 </section>
@@ -212,14 +259,7 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
-<li id="fn1"><p><a href="https://simonwillison.net/2024/Dec/31/llms-in-2024/#-agents-still-haven-t-really-happened-yet" class="uri">https://simonwillison.net/2024/Dec/31/llms-in-2024/#-agents-still-haven-t-really-happened-yet</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p><a href="https://github.com/huggingface/smolagents" class="uri">https://github.com/huggingface/smolagents</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p><a href="https://github.com/huggingface/transformers" class="uri">https://github.com/huggingface/transformers</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p><a href="https://github.com/langchain-ai/langchain" class="uri">https://github.com/langchain-ai/langchain</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5"><p><a href="https://huggingface.co/docs/smolagents/conceptual_guides/intro_agents#code-agents" class="uri">https://huggingface.co/docs/smolagents/conceptual_guides/intro_agents#code-agents</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6"><p><a href="https://huggingface.co/blog/open-deep-research" class="uri">https://huggingface.co/blog/open-deep-research</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7"><p><a href="https://github.com/stanfordnlp/dspy" class="uri">https://github.com/stanfordnlp/dspy</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8"><p><a href="https://arxiv.org/pdf/2310.03714" class="uri">https://arxiv.org/pdf/2310.03714</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p><a href="https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/" class="uri">https://fortune.com/2025/03/27/anthropic-ai-breakthrough-claude-llm-black-box/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
