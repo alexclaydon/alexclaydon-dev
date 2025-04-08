@@ -23,4 +23,4 @@ format:
   html:
     theme:
       - minty
-    css: styles.css
+      - custom.scss
