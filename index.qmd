@@ -4,9 +4,12 @@ title-block-banner: false
 listing:
   contents: posts
   sort: "date desc"
-  type: table
-  table-striped: true
-  table-hover: true
+  # type: table
+  # table-striped: true
+  # table-hover: true
+  type: grid
+  image-placeholder: /images/lexicallabs.gif
+  image-height: "300"
   categories: false
   sort-ui: true
   filter-ui: true
