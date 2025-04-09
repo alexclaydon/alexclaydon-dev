@@ -10,21 +10,74 @@
 <atom:link href="https://alexclaydon.dev/index.xml" rel="self" type="application/rss+xml"/>
 <description>Technical blog of Alex Claydon, Head of Data and AI Strategy at Lexical Labs</description>
 <generator>quarto-1.6.43</generator>
-<lastBuildDate>Mon, 07 Apr 2025 15:00:00 GMT</lastBuildDate>
+<lastBuildDate>Tue, 08 Apr 2025 15:00:00 GMT</lastBuildDate>
 <item>
   <title>Relevant Context, Part 2: Ingestion</title>
-  <link>https://alexclaydon.dev/posts/2025-04-08/</link>
+  <link>https://alexclaydon.dev/posts/2025-04-09/</link>
   <description><![CDATA[ 
 
 
 
 
+<p>“Ingestion” generically refers to the process of transforming a source document into a target format without - or minimising - loss of information.</p>
+<p>The dominant document formats used for commercial legal agreements are Microsoft Word and Adobe PDF. Adobe’s PDF format can be further subdivided into “text”-based - where the characters on each page are represented as unicode characters - and “image”-based - where the contents of each page are effectively represented as an image file that must be passed through an optical chartacter recognition (OCR) process as part of the ingestion process. Each of these formats presents their own unique challenges.</p>
+<p>Reliable, high-quality, at-scale ingestion of the wide variety of document formats in common use today is an enduringly challenging problem - so much so that it continues to support a sizeable enterprise market of sustainably profitable ingestion-as-a-service offerings tailored to specialist domain niches.</p>
+<p>On the other hand, there are now a number of mature open source projects in the space that have changed what is achievable for smaller teams on more constrained budgets. With modest engineering resources, it is now possible - although it remains non-trivial - to set up and maintain a custom in-house ingestion pipeline for your particular domain.</p>
+<section id="representations-suitable-for-use-with-llms" class="level2">
+<h2 class="anchored" data-anchor-id="representations-suitable-for-use-with-llms">Representations Suitable for Use With LLMs</h2>
+<p>Binary formats (such as <code>.docx</code> and <code>.pdf</code>) cannot be directly used in an LLM context window: they must first be transformed into a pure text representation. But that does not imply that we are constrained to only representing <em>textual information</em>: document structure and formatting from the source document - elements of which are just as important for human comprehension as the text itself - can also be retained <em>to the extent that they may be represented using text</em>.</p>
+<p>Even binary formats used in “what you see is what you get” (WYSIWYG) editors such as Microsoft Word represent some of their structure in text directly visible to the end-user: clause numbering in a legal contract, for example. But things like bolding, heading sizes, page breaks, and so forth, are represented using non-textual means - effectively a separate metadata layer which sits alongside the text itself, rather than existing as part of it. Bits of structure and formatting which may be essential to the interpretation of their subject text will be lost to the extent that they cannot be conveted to a textual representation during the ingestion process.</p>
+<p>Happily, there now exist a number of mature, comparatively standardised, text-only representation formats. All of these are in principle suitable for use in LLM context windows, with the better-known variants being naturally preferred for their ubiquity in LLM training datasets. These formats enable varying levels of structural and formatting complexity depending on the particular exigencies of your use-case.</p>
+<p>Perhaps best known - even outside of technical circles - is <a href="https://daringfireball.net/projects/markdown/">Markdown</a>, which has been around since 2004 and was formalised into the <a href="https://en.wikipedia.org/wiki/Markdown">CommonMark</a> specification in 2014. Markdown’s biggest strength is its simplicity: the specification can be learned in afternoon. But simplicity is also its biggest limitation: primarily focussed on web publishing, Markdown struggles with representations of document structure which go beyond simple heading-level demarcation. Although it has been extended to meet some of these challenges, it remains a fundamentally limited choice for high-fedility, pure-text representation of legal contracts. While it has the twin advantages of being both human-readable and well-understood by LLMs, it fundamentally is not a good choice for a <em>canonical</em> textual representation of a legal contract.</p>
+<p>It can be an excellent choice for certain LLM-backed point solutions where structure and formatting are less important; but in those cases, you should choose to transform a higher-quality, “lossless” representation of your document into Markdown as and when needed, rather than use Markdown itself as the canonical representation. Unlike transforming proprietary binary formats to pure-text representations, transforming between text-based representations is usually trivial.</p>
+</section>
+<section id="canonical-representation" class="level2">
+<h2 class="anchored" data-anchor-id="canonical-representation">Canonical Representation</h2>
+<p>Perhaps the best-known alternative pure-text representations are <a href="https://asciidoc.org/">Asciidoc</a> and <a href="https://docutils.sourceforge.io/rst.html">reStructuredText</a>, both of which are better suited to preserving complex document structure while remaining human-legible. LLMs also appear to be comfortable with XML-based formats - although the trade-off there is perhaps reduced legibility for humans. Should we pick one of these and call it a day?</p>
+<p>There may seem a neat symmetry between ingesting into, and storing your documents in, the same format that will ultimately be used with your LLM-backed features. But there are some big trade-offs to this approach, and we think many of the benefits are largely illusory, given the existence of better alternatives.</p>
+<p>Let’s take a step back and think about what we’re trying to achieve and what we’ve established:</p>
+<ul>
+<li>We want bulletproof reliability in the ingestion process: getting great results from our product features is hard enough without having to deal with junk input data created by a poor ingestion process.</li>
+<li>We want to use our documents with LLMs without sacrificing important structure and formatting, certainly.</li>
+<li>However, we also know that we will have uses for our documents which do not directly - or immediately - involve LLMs, and for which we may want to leverage document structure or features that cannot be represented in a simple text representation at all. Chief amongst these are what we have referred to in <a href="../../posts/2025-04-07/index.html">Part 1 of this series</a> as “Document and Chunk Enhancement” processing.</li>
+<li>We will almost certainly also want to be able to work with the document, or parts of the document, as structured objects in code, rather than just partial strings.</li>
+<li>Images cannot be losslessly represented using pure-text representations, and tables can be difficult to impossible to represent, depending on their complexity.</li>
+<li>Transforming between “near-text” representations and Markdown / Asciidoc / reStructuredText is usually trivially easy - although it may not be lossless, depending on the target format chosen.</li>
+</ul>
+<p>Laying it all out like that, it’s clear that our actual constraint isn’t that meaningful document structure and formatting must be immediately representable in pure-text, but that it must be trivial to produce <em>arbitrary pure-text representations</em> from whatever interim canonical format we do choose to use. Loosening the requirement to store our canonical ingested documents in plain text means we can lean into a whole host of extra-textual features, allowing us to store and make sense of images and tables, work with structured objects in code, produce different target transformations for different purposes, and leverage the richer structure and formatting we have captured during ingestion in our metadata extraction and enhancement activities. We should assume that any format with these features is a reasonable candidate for our canonical representation, and indeed we should be ambivalent to any format possessing these features, all else being held equal.</p>
+<p>As such, we should be much more interested in the robustness of the transformation performed by our ingestion software - including its performance across the major source formats commonly used in our domain - than the particulars of the chosen representation format (assuming it is high-resolution).</p>
+</section>
+<section id="recommended-tooling" class="level2">
+<h2 class="anchored" data-anchor-id="recommended-tooling">Recommended Tooling</h2>
+<p>Owing mainly to how challenging ingestion can be - particularly for documents which require OCR - historical limitations in the performance of open source tooling in the space, and unique business needs, in-house ingestion pipelines tend to involve a complex patchwork of processes. Despite recent advances - particularly in open source tooling - there is no single “off the shelf” tool that is capable of handling all of the edge cases even a team is likely to encounter when working with legal documents.</p>
+<p>The following are our own recommendations for how we would put together a “greenfield” ingestion pipeline leveraging the current state of the art if we were starting from scratch today. We will update the below as and when there’s anything to add; notably, some of the LLM-backed solutions to knotty edge cases are evolving rapidly - we can reasonably expect to continue to see progress in the coming months.</p>
+<section id="microsoft-word-documents-adobe-pdfs-not-requiring-ocr" class="level3">
+<h3 class="anchored" data-anchor-id="microsoft-word-documents-adobe-pdfs-not-requiring-ocr">Microsoft Word Documents, Adobe PDFs Not Requiring OCR</h3>
+<p>In our view, the starting point for most document ingestion should be either the Apache Foundation’s <a href="https://tika.apache.org/">Tika</a>, or IBM Research Zurich’s <a href="https://github.com/docling-project/docling">Docling</a>. Tika is by far the more mature option, but Docling - which might be a better fit for smaller teams given its more hands-off, opinionated approach - is a serious contender, in our experience demonstrating generally superior handling of PDFs, as well as providing structured extraction of tables and other PDF document features that Tika does not. We also like the structured object produced by Docling and its lossless JSON serialisation option. Some have found that Tika outperforms Docling on Microsoft Office documents, although our own experience is mixed. You should trial both for your use-cases.</p>
+<p>There are other options - most notably, perhaps, Microsoft’s own <a href="https://github.com/microsoft/markitdown">MarkItDown</a> - but we are not recommending those at this time, since Tika and Docling - or some combination of the two - are such a compelling starting point.</p>
+</section>
+<section id="documents-requiring-ocr" class="level3">
+<h3 class="anchored" data-anchor-id="documents-requiring-ocr">Documents Requiring OCR</h3>
+<p>The complexity of OCR is driven in part by the wide variation in quality of the source documents. Printing quality, document age, whether the document has itself been reproduced from a poor copy (e.g., a Xerox of another document) - all impact legibility. As such, consistent, reliable, OCR remains challenging, with many edge cases.</p>
+<p>As with non-OCR PDFs, Tika and Docling are good starting points, both coming bundled with OCR capabilities. Docling is also extensible, and is leaning into the nascent practice of <a href="https://huggingface.co/ds4sd/SmolDocling-256M-preview">leveraging multimodal LLMs</a> to improve OCR outcomes. Unlike some of the foundation model options below, which are only available over API, SmolDocling-256M-preview can be run on your own hardware. In the context of legal document ingestion, the privacy benefits of this are hard to overlook.</p>
+<p>To the extent that either of those aren’t suitable for your use-case, we’ve also observed others having some success using freestanding multi-modal foundation LLMs over API as their primary ingestion tool. This approach has privacy implications, given that you will be sending the contents of each page over the wire to OpenAI, Google, etc. In addition, it can be challenging to preserve complete document structure using these approaches. But if all you really need is the text, and you have non-sensitive documents and/or a trusted inference provider, these are good “nuclear” options: they require lots of compute, but - if correctly implemented - can be very reliable. Certainly not something you’d want to use for every document coming in, but something perhaps to hold in reserve for where the cost is justified.</p>
+<p>In practical terms, this can be done as follows:</p>
+<ul>
+<li>Extract each page of your PDF into a separate base-64 encoded image file (using, e.g., <a href="https://imagemagick.org/index.php">ImageMagick</a>)</li>
+<li>If necessary, de-skew and/or crop the images (again, using, e.g., ImageMagick)</li>
+<li>Pass the resulting image binary to one of the following multi-modal LLMs, all of which are considered state of the art for text extraction tasks: Google’s <a href="https://deepmind.google/technologies/gemini/flash/">Gemini Flash 2.0</a>, Anthropic’s <a href="https://www.anthropic.com/claude/sonnet">Claude Sonnet 3.7</a> or OpenAI’s GPT-4o., along with a prompt instructing the model to extract the text verbatim.</li>
+<li>Stitch the resulting output back into a text-only representation (since much of the document structure will have been lost in the conversion)</li>
+</ul>
+<p>Note that <a href="https://mistral.ai/news/mistral-ocr">Mistral</a> also has a specialised endpoint available for OCR-related tasks. We haven’t personally used it, and it faces the same privacy-related concerns as any other LLM over inference API, but it does claim better handling of document structure versus the general-purpose multi-modal LLMs considered above.</p>
+<p>Finally, if you have the hardware for it and can’t send your documents to your API inference provider, <a href="https://huggingface.co/Qwen/Qwen2.5-32B">Qwen 2.5 32b</a> is widely considered to be state of the art for text extraction tasks within the constraint of common destkop GPU VRAM limits.</p>
 
 
+</section>
+</section>
 
 <a onclick="window.scrollTo(0, 0); return false;" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a> ]]></description>
-  <guid>https://alexclaydon.dev/posts/2025-04-08/</guid>
-  <pubDate>Mon, 07 Apr 2025 15:00:00 GMT</pubDate>
+  <guid>https://alexclaydon.dev/posts/2025-04-09/</guid>
+  <pubDate>Tue, 08 Apr 2025 15:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Relevant Context, Part 1: Introduction</title>
